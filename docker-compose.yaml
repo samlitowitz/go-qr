@@ -1,0 +1,7 @@
+services:
+  test-debug:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: test-debug
+    network_mode: "host"
