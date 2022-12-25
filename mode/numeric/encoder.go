@@ -147,10 +147,10 @@ func (enc *Encoder) Encode(v []byte) error {
 			numberOfBitsToPack = bitsPerGroup
 		case charCount-k >= 2:
 			groupVal = 10*int(v[k]) + int(v[k+1])
-			numberOfBitsToPack = mostSignificantBit(groupVal)
+			numberOfBitsToPack = 7
 		case charCount-k >= 1:
 			groupVal = int(v[k])
-			numberOfBitsToPack = mostSignificantBit(groupVal)
+			numberOfBitsToPack = 4
 		}
 		if numberOfBitsToPack/8+1+byteInBuf >= bufLen {
 			_, err = enc.w.Write(buf[:byteInBuf])
@@ -163,7 +163,7 @@ func (enc *Encoder) Encode(v []byte) error {
 		}
 		for numberOfBitsUnpacked = numberOfBitsToPack; numberOfBitsUnpacked > 0; {
 			numberOfBitsUnpacked, unusedBitsInByte, byteInBuf, err = packInt(
-				int(enc.cfg.ModeIndicator),
+				groupVal,
 				numberOfBitsToPack,
 				unusedBitsInByte,
 				byteInBuf,
@@ -176,6 +176,11 @@ func (enc *Encoder) Encode(v []byte) error {
 				}
 			}
 		}
+	}
+
+	if unusedBitsInByte > 0 {
+		byteInBuf++
+		unusedBitsInByte = bitsPerByte
 	}
 
 	if byteInBuf > 0 {
@@ -231,5 +236,5 @@ func packInt(v, numberOfBitsToPack, unusedBitsInByte, byteInBuf int, buf *[]byte
 }
 
 func mostSignificantBit(v int) int {
-	return int(math.Log2(float64(v)))
+	return int(math.Log2(float64(v))) + 1
 }
