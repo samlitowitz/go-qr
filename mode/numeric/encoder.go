@@ -54,9 +54,9 @@ func NewEncoder(cfg *Config, w io.Writer) *Encoder {
 	return &Encoder{cfg: cfg, w: w}
 }
 
-func (enc *Encoder) Encode(v []byte) error {
+func (enc *Encoder) Encode(v []byte) (int, error) {
 	if len(v) > 2<<14-1 {
-		return &EncodingError{
+		return 0, &EncodingError{
 			Err: &OutOfBoundsError{
 				given:  fmt.Sprintf("%d", len(v)),
 				bounds: fmt.Sprintf("[1, %d]", 2<<14-1),
@@ -66,7 +66,7 @@ func (enc *Encoder) Encode(v []byte) error {
 
 	for i := 0; i < len(v); i++ {
 		if v[i] < 0x30 || v[i] > 0x39 {
-			return &EncodingError{
+			return 0, &EncodingError{
 				Err: &OutOfBoundsError{
 					given:  fmt.Sprintf("%x", v[i]),
 					bounds: "[0x30, 0x39]",
@@ -77,6 +77,15 @@ func (enc *Encoder) Encode(v []byte) error {
 	}
 
 	charCount := len(v)
+	remainder := 0
+	switch charCount % 3 {
+	case 1:
+		remainder = 4
+	case 2:
+		remainder = 7
+	}
+	bitsInStream := enc.cfg.ModeIndicatorLength + enc.cfg.CharacterCountLength + 10*(charCount/3) + remainder
+
 	buf := make([]byte, bufLen)
 	var byteInBuf int
 	unusedBitsInByte := bitsPerByte
@@ -88,7 +97,7 @@ func (enc *Encoder) Encode(v []byte) error {
 	if numberOfBitsToPack/8+1+byteInBuf >= bufLen {
 		_, err = enc.w.Write(buf[:byteInBuf])
 		if err != nil {
-			return &EncodingError{
+			return 0, &EncodingError{
 				Pos: byteInBuf,
 				Err: err,
 			}
@@ -103,7 +112,7 @@ func (enc *Encoder) Encode(v []byte) error {
 			&buf,
 		)
 		if err != nil {
-			return &EncodingError{
+			return 0, &EncodingError{
 				Pos: byteInBuf,
 				Err: err,
 			}
@@ -115,7 +124,7 @@ func (enc *Encoder) Encode(v []byte) error {
 	if numberOfBitsToPack/8+1+byteInBuf >= bufLen {
 		_, err = enc.w.Write(buf[:byteInBuf])
 		if err != nil {
-			return &EncodingError{
+			return 0, &EncodingError{
 				Pos: byteInBuf,
 				Err: err,
 			}
@@ -130,7 +139,7 @@ func (enc *Encoder) Encode(v []byte) error {
 			&buf,
 		)
 		if err != nil {
-			return &EncodingError{
+			return 0, &EncodingError{
 				Pos: byteInBuf,
 				Err: err,
 			}
@@ -155,7 +164,7 @@ func (enc *Encoder) Encode(v []byte) error {
 		if numberOfBitsToPack/8+1+byteInBuf >= bufLen {
 			_, err = enc.w.Write(buf[:byteInBuf])
 			if err != nil {
-				return &EncodingError{
+				return 0, &EncodingError{
 					Pos: byteInBuf,
 					Err: err,
 				}
@@ -170,7 +179,7 @@ func (enc *Encoder) Encode(v []byte) error {
 				&buf,
 			)
 			if err != nil {
-				return &EncodingError{
+				return 0, &EncodingError{
 					Pos: byteInBuf,
 					Err: err,
 				}
@@ -186,14 +195,14 @@ func (enc *Encoder) Encode(v []byte) error {
 	if byteInBuf > 0 {
 		_, err = enc.w.Write(buf[:byteInBuf])
 		if err != nil {
-			return &EncodingError{
+			return 0, &EncodingError{
 				Pos: byteInBuf,
 				Err: err,
 			}
 		}
 	}
 
-	return nil
+	return bitsInStream, nil
 }
 
 func packInt(v, numberOfBitsToPack, unusedBitsInByte, byteInBuf int, buf *[]byte) (int, int, int, error) {
