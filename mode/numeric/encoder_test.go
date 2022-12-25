@@ -5,11 +5,12 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/samlitowitz/go-qr/mode"
 	"github.com/samlitowitz/go-qr/mode/numeric"
 )
 
 func TestEncoder_Encode_TooLargeInput(t *testing.T) {
-	encoder := numeric.NewEncoder(&numeric.Config{}, &bytes.Buffer{})
+	encoder := numeric.NewEncoder(&mode.Config{}, &bytes.Buffer{})
 	_, err := encoder.Encode(make([]byte, 2<<14))
 
 	if err == nil {
@@ -29,13 +30,13 @@ func TestEncoder_Encode_TooLargeInput(t *testing.T) {
 
 func TestEncoder_Encode(t *testing.T) {
 	testCases := []struct {
-		cfg          *numeric.Config
+		cfg          *mode.Config
 		v            []byte
 		expected     []byte
 		bitsInStream int
 	}{
 		{
-			cfg: &numeric.Config{
+			cfg: &mode.Config{
 				ModeIndicatorLength:  4,
 				ModeIndicator:        1,
 				CharacterCountLength: 10,
@@ -45,7 +46,7 @@ func TestEncoder_Encode(t *testing.T) {
 			bitsInStream: 41,
 		},
 		{
-			cfg: &numeric.Config{
+			cfg: &mode.Config{
 				ModeIndicatorLength:  2,
 				ModeIndicator:        0,
 				CharacterCountLength: 5,

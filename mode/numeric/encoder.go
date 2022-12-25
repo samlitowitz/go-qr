@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"io"
 	"math"
+
+	"github.com/samlitowitz/go-qr/mode"
 )
 
 const bitsPerByte = 8
@@ -39,18 +41,12 @@ func (err *OutOfBoundsError) Error() string {
 	)
 }
 
-type Config struct {
-	ModeIndicatorLength  int // The length of the mode indicator in bits
-	ModeIndicator        byte
-	CharacterCountLength int // The length of the character count in bits
-}
-
 type Encoder struct {
 	w   io.Writer
-	cfg *Config
+	cfg *mode.Config
 }
 
-func NewEncoder(cfg *Config, w io.Writer) *Encoder {
+func NewEncoder(cfg *mode.Config, w io.Writer) *Encoder {
 	return &Encoder{cfg: cfg, w: w}
 }
 
