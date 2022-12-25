@@ -17,11 +17,11 @@ func TestEncoder_Encode_TooLargeInput(t *testing.T) {
 		t.Fatalf("Expected error, got nil")
 	}
 
-	encodingError := &numeric.EncodingError{}
+	encodingError := &mode.EncodingError{}
 	if !errors.As(err, &encodingError) {
 		t.Fatalf("Expected EncodingError")
 	}
-	outOfOBoundsError := &numeric.OutOfBoundsError{}
+	outOfOBoundsError := &mode.OutOfBoundsError{}
 	err = errors.Unwrap(err)
 	if !errors.As(err, &outOfOBoundsError) {
 		t.Fatalf("Expected OutOfBoundsError")
