@@ -28,6 +28,25 @@ type Buffer struct {
 	writeOffBit int // write at &buf[len(buf)] | (((1<< readOffBit) - 1) & input[i])
 }
 
+// Bytes returns a slice of length len(b.buf) - b.readOffByte holding the unread portion of the buffer.
+// The slice is valid for use only until the next buffer modification (that is,
+// only until the next call to a method like Read, Write, Reset, or Truncate).
+// The slice aliases the buffer content at least until the next buffer modification,
+// so immediate changes to the slice will affect the result of future reads.
+func (b *Buffer) Bytes() []byte { return b.buf[b.readOffByte:] }
+
+// String returns the contents of the unread portion of the buffer
+// as a string. If the Buffer is a nil pointer, it returns "<nil>".
+//
+// To build strings more efficiently, see the strings.Builder type.
+func (b *Buffer) String() string {
+	if b == nil {
+		// Special case, useful in debugging.
+		return "<nil>"
+	}
+	return string(b.buf[b.readOffBit:])
+}
+
 // empty reports whether the unread portion of the buffer is empty.
 func (b *Buffer) empty() bool {
 	return (len(b.buf) < b.readOffByte) || (len(b.buf) == b.readOffByte && b.readOffBit == 0)
@@ -55,51 +74,58 @@ func (b *Buffer) Write(p []byte, n int) (m int, err error) {
 		offByte = b.grow(n)
 	}
 	// Bit offset is zero, just copy it over
-	if b.writeOffBit == 0 {
+	if b.writeOffBit == 0 && n%pkg.BitsPerByte == 0 {
 		b.writeOffBit = n % pkg.BitsPerByte
 		m = pkg.BitsPerByte * copy(b.buf[offByte:], p)
+
 		if m > n {
 			m = n
 		}
 		return m, nil
 	}
 
-	var inputOffByte int
-	var unwrittenBitsBufByte, unreadBitsInInputByte int
-	var readMask, writeMask byte
+	var inputOffByte, inputOffBit int
+	var unwrittenBitsBufByte, unreadBitsInInputByte, bytesToWrite int
+	var readMask, writeByte byte
 
 	for m = 0; m < n; {
+		inputOffByte = m / pkg.BitsPerByte
+		inputOffBit = m % pkg.BitsPerByte
+
 		// how many bits left in current buf byte
 		unwrittenBitsBufByte = pkg.BitsPerByte - b.writeOffBit
 		// how many bits left in current input byte
-		unreadBitsInInputByte = m % pkg.BitsPerByte
-
-		readMask = (1 << unreadBitsInInputByte) - 1
-		writeMask = (1 << unwrittenBitsBufByte) - 1
-
-		switch true {
-		case unreadBitsInInputByte == unwrittenBitsBufByte:
-			b.buf[offByte] |= writeMask & (readMask & p[inputOffByte])
-
-			m += unreadBitsInInputByte
-			inputOffByte++
-			offByte++
-			b.writeOffBit = 0
-
-		case unreadBitsInInputByte < unwrittenBitsBufByte:
-			b.buf[offByte] |= writeMask & ((readMask & p[inputOffByte]) << (unwrittenBitsBufByte - unreadBitsInInputByte))
-
-			m += unreadBitsInInputByte
-			inputOffByte++
-			b.writeOffBit += unreadBitsInInputByte
-
-		case unreadBitsInInputByte > unwrittenBitsBufByte:
-			b.buf[offByte] |= writeMask & ((readMask & p[inputOffByte]) >> (unreadBitsInInputByte - unwrittenBitsBufByte))
-
-			m += unreadBitsInInputByte - unwrittenBitsBufByte
-			offByte++
-			b.writeOffBit = 0
+		unreadBitsInInputByte = n - m
+		if pkg.BitsPerByte-inputOffBit < unreadBitsInInputByte {
+			unreadBitsInInputByte = pkg.BitsPerByte - inputOffBit
 		}
+
+		bytesToWrite = unwrittenBitsBufByte
+		if unreadBitsInInputByte < bytesToWrite {
+			bytesToWrite = unreadBitsInInputByte
+		}
+
+		// Build read mask
+		readMask = (1 << bytesToWrite) - 1
+		// Position read mask
+		readMask <<= 8 - bytesToWrite - inputOffBit
+
+		// Apply read mask
+		writeByte = p[inputOffByte] & readMask
+		// Position at MSB
+		writeByte <<= inputOffBit
+		// Position at write offset
+		writeByte >>= b.writeOffBit
+
+		// Write bits
+		b.buf[offByte] |= writeByte
+
+		b.writeOffBit += bytesToWrite
+		if b.writeOffBit >= 8 {
+			offByte++
+			b.writeOffBit = b.writeOffBit % 8
+		}
+		m += bytesToWrite
 	}
 
 	return m, nil
