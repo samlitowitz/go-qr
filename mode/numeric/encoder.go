@@ -20,11 +20,12 @@ func NewEncoder(cfg *mode.Config, w io.Writer) *Encoder {
 }
 
 func (enc *Encoder) Encode(v []byte) (int, error) {
-	if len(v) > 2<<14-1 {
+	maxDataLen := 2<<enc.cfg.CharacterCountLength - 1
+	if len(v) > maxDataLen {
 		return 0, &mode.EncodingError{
 			Err: &mode.OutOfBoundsError{
 				Given:  fmt.Sprintf("%d", len(v)),
-				Bounds: fmt.Sprintf("[1, %d]", 2<<14-1),
+				Bounds: fmt.Sprintf("[1, %d]", maxDataLen),
 			},
 		}
 	}
