@@ -1,12 +1,13 @@
-package alphanumeric
+package numeric
 
 import (
 	"fmt"
 	"io"
 
-	"github.com/samlitowitz/go-qr/mode"
+	"github.com/samlitowitz/go-qr/pkg/mode"
 )
 
+const bitsPerGroup = 10
 const bufLen = 1024
 
 type Encoder struct {
@@ -30,20 +31,26 @@ func (enc *Encoder) Encode(v []byte) (int, error) {
 	}
 
 	for i := 0; i < len(v); i++ {
-		mapped, ok := encodeMap[v[i]]
-		if !ok {
+		if v[i] < 0x30 || v[i] > 0x39 {
 			return 0, &mode.EncodingError{
 				Err: &mode.OutOfBoundsError{
 					Given:  fmt.Sprintf("%x", v[i]),
-					Bounds: "([0-9A-Z$%*+-./:\\s])",
+					Bounds: "[0x30, 0x39]",
 				},
 			}
 		}
-		v[i] = mapped
+		v[i] = v[i] - 0x30
 	}
 
 	charCount := len(v)
-	bitsInStream := enc.cfg.ModeIndicatorLength + enc.cfg.CharacterCountLength + 11*(charCount/2) + 6*(charCount%2)
+	remainder := 0
+	switch charCount % 3 {
+	case 1:
+		remainder = 4
+	case 2:
+		remainder = 7
+	}
+	bitsInStream := enc.cfg.ModeIndicatorLength + enc.cfg.CharacterCountLength + 10*(charCount/3) + remainder
 
 	buf := make([]byte, bufLen)
 	var byteInBuf int
@@ -106,16 +113,19 @@ func (enc *Encoder) Encode(v []byte) (int, error) {
 	}
 
 	// Data
-	// -- Process in groups of two
+	// -- Process in groups of three digits
 	var groupVal int
-	for k := 0; k < charCount; k += 2 {
+	for k := 0; k < charCount; k += 3 {
 		switch true {
+		case charCount-k >= 3:
+			groupVal = 100*int(v[k]) + 10*int(v[k+1]) + int(v[k+2])
+			numberOfBitsToPack = bitsPerGroup
 		case charCount-k >= 2:
-			groupVal = 45*int(v[k]) + int(v[k+1])
-			numberOfBitsToPack = 11
+			groupVal = 10*int(v[k]) + int(v[k+1])
+			numberOfBitsToPack = 7
 		case charCount-k >= 1:
 			groupVal = int(v[k])
-			numberOfBitsToPack = 6
+			numberOfBitsToPack = 4
 		}
 		if numberOfBitsToPack/8+1+byteInBuf >= bufLen {
 			_, err = enc.w.Write(buf[:byteInBuf])
