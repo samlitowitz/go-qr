@@ -29,3 +29,4 @@ RUN go install github.com/go-delve/delve/cmd/dlv@latest \
 EXPOSE 8000 40000
 
 CMD ["dlv", "--listen=:40000", "--headless=true", "--api-version=2", "--accept-multiclient", "test", "github.com/samlitowitz/go-qr/mode/numeric", "--", "-test.run", "^TestEncoder_Encode$"]
+CMD ["dlv", "--listen=:40000", "--headless=true", "--api-version=2", "--accept-multiclient", "test", "github.com/samlitowitz/go-qr/mode/alphanumeric", "--", "-test.run", "^TestEncoder_Encode$"]
