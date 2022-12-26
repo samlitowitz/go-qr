@@ -3,12 +3,10 @@ package numeric
 import (
 	"fmt"
 	"io"
-	"math"
 
 	"github.com/samlitowitz/go-qr/mode"
 )
 
-const bitsPerByte = 8
 const bitsPerGroup = 10
 const bufLen = 1024
 
@@ -55,7 +53,7 @@ func (enc *Encoder) Encode(v []byte) (int, error) {
 
 	buf := make([]byte, bufLen)
 	var byteInBuf int
-	unusedBitsInByte := bitsPerByte
+	unusedBitsInByte := mode.BitsPerByte
 	var numberOfBitsToPack, numberOfBitsUnpacked int
 	var err error
 
@@ -71,7 +69,7 @@ func (enc *Encoder) Encode(v []byte) (int, error) {
 		}
 	}
 	for numberOfBitsUnpacked = numberOfBitsToPack; numberOfBitsUnpacked > 0; {
-		numberOfBitsUnpacked, unusedBitsInByte, byteInBuf, err = packInt(
+		numberOfBitsUnpacked, unusedBitsInByte, byteInBuf, err = mode.PackInt(
 			int(enc.cfg.ModeIndicator),
 			numberOfBitsToPack,
 			unusedBitsInByte,
@@ -98,7 +96,7 @@ func (enc *Encoder) Encode(v []byte) (int, error) {
 		}
 	}
 	for numberOfBitsUnpacked = numberOfBitsToPack; numberOfBitsUnpacked > 0; {
-		numberOfBitsUnpacked, unusedBitsInByte, byteInBuf, err = packInt(
+		numberOfBitsUnpacked, unusedBitsInByte, byteInBuf, err = mode.PackInt(
 			charCount,
 			numberOfBitsToPack,
 			unusedBitsInByte,
@@ -138,7 +136,7 @@ func (enc *Encoder) Encode(v []byte) (int, error) {
 			}
 		}
 		for numberOfBitsUnpacked = numberOfBitsToPack; numberOfBitsUnpacked > 0; {
-			numberOfBitsUnpacked, unusedBitsInByte, byteInBuf, err = packInt(
+			numberOfBitsUnpacked, unusedBitsInByte, byteInBuf, err = mode.PackInt(
 				groupVal,
 				numberOfBitsToPack,
 				unusedBitsInByte,
@@ -156,7 +154,7 @@ func (enc *Encoder) Encode(v []byte) (int, error) {
 
 	if unusedBitsInByte > 0 {
 		byteInBuf++
-		unusedBitsInByte = bitsPerByte
+		unusedBitsInByte = mode.BitsPerByte
 	}
 
 	if byteInBuf > 0 {
@@ -170,47 +168,4 @@ func (enc *Encoder) Encode(v []byte) (int, error) {
 	}
 
 	return bitsInStream, nil
-}
-
-func packInt(v, numberOfBitsToPack, unusedBitsInByte, byteInBuf int, buf *[]byte) (int, int, int, error) {
-	var toCopy int
-	toCopy = v
-	numberOfBitsUnpacked := numberOfBitsToPack
-	for numberOfBitsPacked := 0; numberOfBitsPacked < numberOfBitsToPack; {
-		switch true {
-		case numberOfBitsUnpacked == unusedBitsInByte:
-			// copy
-			(*buf)[byteInBuf] |= byte(toCopy)
-
-			// bookkeeping
-			byteInBuf++
-			unusedBitsInByte = bitsPerByte
-			numberOfBitsPacked += numberOfBitsUnpacked
-			numberOfBitsUnpacked = 0
-
-		case numberOfBitsUnpacked < unusedBitsInByte:
-			// copy
-			(*buf)[byteInBuf] |= byte(toCopy) << (unusedBitsInByte - numberOfBitsUnpacked)
-
-			// bookkeeping
-			unusedBitsInByte -= numberOfBitsUnpacked
-			numberOfBitsPacked += numberOfBitsUnpacked
-			numberOfBitsUnpacked = 0
-
-		case numberOfBitsUnpacked > unusedBitsInByte:
-			// copy
-			(*buf)[byteInBuf] |= byte(toCopy >> (numberOfBitsUnpacked - unusedBitsInByte))
-
-			// bookkeeping
-			numberOfBitsPacked += unusedBitsInByte
-			numberOfBitsUnpacked -= unusedBitsInByte
-			byteInBuf++
-			unusedBitsInByte = bitsPerByte
-		}
-	}
-	return numberOfBitsUnpacked, unusedBitsInByte, byteInBuf, nil
-}
-
-func mostSignificantBit(v int) int {
-	return int(math.Log2(float64(v))) + 1
 }
