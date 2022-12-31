@@ -5,8 +5,6 @@ import (
 	"math"
 )
 
-const primeModulo int = 285
-
 type Generator struct {
 	cfg *Config
 }
@@ -17,8 +15,10 @@ func NewGenerator(cfg *Config) *Generator {
 
 func (g *Generator) Generate(dataCodewords []byte) (errorCodewords []byte, err error) {
 	expectedDataCodewords := 0
+	errorCodewordsCount := 0
 	for _, ec := range g.cfg.ErrorCorrections {
 		expectedDataCodewords += ec.Blocks * ec.K
+		errorCodewordsCount += ec.Blocks * g.cfg.ErrorCorrectionCodewordCount
 	}
 
 	if len(dataCodewords) != expectedDataCodewords {
@@ -32,11 +32,11 @@ func (g *Generator) Generate(dataCodewords []byte) (errorCodewords []byte, err e
 	var remainderTerms []byte
 	//var mTermInt, inputTermInt, gTermAlpha, gMultAlpha, gMultInt byte
 	var mTermInt, inputTermInt, gMultInt byte
-	errorCodewords = make([]byte, 0, g.cfg.ErrorCorrectionCodewordCount)
+	errorCodewords = make([]byte, 0, errorCodewordsCount)
 	remainderTermCount := g.cfg.ErrorCorrectionCodewordCount
 
 	for _, ec := range g.cfg.ErrorCorrections {
-		for i := 0; i < ec.Blocks; i++ {
+		for bI := 0; bI < ec.Blocks; bI++ {
 			remainderTerms = make([]byte, remainderTermCount)
 			mTermInt = 0
 
@@ -56,27 +56,8 @@ func (g *Generator) Generate(dataCodewords []byte) (errorCodewords []byte, err e
 				gMultInt = expTable[gfMult(g.cfg.Gx[0], inputAlpha)]
 				remainderTerms[0] = gMultInt
 			}
-
-			for j := 0; j < remainderTermCount; j++ {
-				remainderLeadTermInt := remainderTerms[remainderTermCount-1]
-				inputTermInt = 0
-				inputAlpha := logTable[inputTermInt]
-				fmt.Printf("%3d : %-3d\n", j, remainderLeadTermInt)
-
-				errorCodewords = append(errorCodewords, remainderLeadTermInt)
-				for k := remainderTermCount - 1; k > 0; k-- {
-					//gTermAlpha = g.cfg.Gx[k]
-					//gMultAlpha = byte((int(gTermAlpha) + int(inputAlpha)) % math.MaxUint8)
-					//gMultInt = expTable[gMultAlpha]
-					gMultInt = expTable[gfMult(g.cfg.Gx[k], inputAlpha)]
-
-					remainderTerms[k] = remainderTerms[k-1] ^ gMultInt
-				}
-				//gTermAlpha = g.cfg.Gx[0]
-				//gMultAlpha = (gTermAlpha + inputAlpha) % math.MaxUint8
-				//gMultInt = expTable[gMultAlpha]
-				gMultInt = expTable[gfMult(g.cfg.Gx[0], inputAlpha)]
-				remainderTerms[0] = gMultInt
+			for j := remainderTermCount - 1; j >= 0; j-- {
+				errorCodewords = append(errorCodewords, remainderTerms[j])
 			}
 		}
 	}
