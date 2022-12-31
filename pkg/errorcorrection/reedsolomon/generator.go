@@ -31,7 +31,7 @@ func (g *Generator) Generate(dataCodewords []byte) (errorCodewords []byte, err e
 
 	var remainderTerms []byte
 	//var mTermInt, inputTermInt, gTermAlpha, gMultAlpha, gMultInt byte
-	var mTermInt, inputTermInt, gTermAlpha, gMultInt byte
+	var mTermInt, inputTermInt, gMultInt byte
 	errorCodewords = make([]byte, 0, g.cfg.ErrorCorrectionCodewordCount)
 	remainderTermCount := g.cfg.ErrorCorrectionCodewordCount
 
@@ -39,83 +39,43 @@ func (g *Generator) Generate(dataCodewords []byte) (errorCodewords []byte, err e
 		for i := 0; i < ec.Blocks; i++ {
 			remainderTerms = make([]byte, remainderTermCount)
 			mTermInt = 0
-			z := 0
 
 			// Iterate over K data codewords in this block
 			for j := 0; j < ec.K; j++ {
-				printOutput := j >= 2 && j <= 12
-				printOutput = false
-
 				remainderLeadTermInt := remainderTerms[remainderTermCount-1]
 				mTermInt = dataCodewords[j]
 				inputTermInt = remainderLeadTermInt ^ mTermInt
 				inputAlpha := logTable[inputTermInt]
 
-				if printOutput {
-					fmt.Printf("%-3d : %-3d : ", j, inputTermInt)
-				}
-
 				// Update Registers
 				for k := remainderTermCount - 1; k > 0; k-- {
-					//gTermAlpha = g.cfg.Gx[k]
-					//gMultAlpha = byte((int(gTermAlpha) + int(inputAlpha)) % math.MaxUint8)
-					//gMultInt = expTable[gMultAlpha]
-					gMultInt = expTable[gfMult(gTermAlpha, inputAlpha)]
+					gMultInt = expTable[gfMult(g.cfg.Gx[k], inputAlpha)]
 
 					remainderTerms[k] = remainderTerms[k-1] ^ gMultInt
-					//if printOutput && k == z {
-					//	fmt.Printf(
-					//		"%3d = %3d + %3d = EXP[ %3d = (%3d + %3d = LOG[%3d]) %% 255 ]\n",
-					//		remainderTerms[0],
-					//		0,
-					//		gMultInt,
-					//		gMultAlpha,
-					//		gTermAlpha,
-					//		inputAlpha,
-					//		inputTermInt,
-					//	)
-					//	z++
-					//}
 				}
-				//gTermAlpha = g.cfg.Gx[0]
-				//gMultAlpha = byte((int(gTermAlpha) + int(inputAlpha)) % math.MaxUint8)
-				//gMultInt = expTable[gMultAlpha]
-				gMultInt = expTable[gfMult(gTermAlpha, inputAlpha)]
+				gMultInt = expTable[gfMult(g.cfg.Gx[0], inputAlpha)]
 				remainderTerms[0] = gMultInt
-
-				//if printOutput && 0 == z {
-				//	fmt.Printf(
-				//		"%3d = %3d + %3d = EXP[ %3d = (%3d + %3d = LOG[%3d]) %% 255 ]\n",
-				//		remainderTerms[0],
-				//		0,
-				//		gMultInt,
-				//		gMultAlpha,
-				//		gTermAlpha,
-				//		inputAlpha,
-				//		inputTermInt,
-				//	)
-				//	z++
-				//}
 			}
 
 			for j := 0; j < remainderTermCount; j++ {
 				remainderLeadTermInt := remainderTerms[remainderTermCount-1]
 				inputTermInt = 0
 				inputAlpha := logTable[inputTermInt]
+				fmt.Printf("%3d : %-3d\n", j, remainderLeadTermInt)
 
 				errorCodewords = append(errorCodewords, remainderLeadTermInt)
 				for k := remainderTermCount - 1; k > 0; k-- {
 					//gTermAlpha = g.cfg.Gx[k]
 					//gMultAlpha = byte((int(gTermAlpha) + int(inputAlpha)) % math.MaxUint8)
 					//gMultInt = expTable[gMultAlpha]
-					gMultInt = expTable[gfMult(gTermAlpha, inputAlpha)]
+					gMultInt = expTable[gfMult(g.cfg.Gx[k], inputAlpha)]
 
 					remainderTerms[k] = remainderTerms[k-1] ^ gMultInt
 				}
 				//gTermAlpha = g.cfg.Gx[0]
 				//gMultAlpha = (gTermAlpha + inputAlpha) % math.MaxUint8
 				//gMultInt = expTable[gMultAlpha]
-				gMultInt = expTable[gfMult(gTermAlpha, inputAlpha)]
+				gMultInt = expTable[gfMult(g.cfg.Gx[0], inputAlpha)]
 				remainderTerms[0] = gMultInt
 			}
 		}
