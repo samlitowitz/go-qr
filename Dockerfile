@@ -32,3 +32,4 @@ CMD ["dlv", "--listen=:40000", "--headless=true", "--api-version=2", "--accept-m
 CMD ["dlv", "--listen=:40000", "--headless=true", "--api-version=2", "--accept-multiclient", "test", "github.com/samlitowitz/go-qr/pkg/mode/alphanumeric", "--", "-test.run", "^TestEncoder_Encode$"]
 CMD ["dlv", "--listen=:40000", "--headless=true", "--api-version=2", "--accept-multiclient", "test", "github.com/samlitowitz/go-qr/pkg/bits", "--", "-test.run", "TestBuffer_Write$"]
 CMD ["dlv", "--listen=:40000", "--headless=true", "--api-version=2", "--accept-multiclient", "test", "github.com/samlitowitz/go-qr/pkg/errorcorrection/reedsolomon", "--", "-test.run", "TestGenerator_Generate$"]
+CMD ["dlv", "--listen=:40000", "--headless=true", "--api-version=2", "--accept-multiclient", "test", "github.com/samlitowitz/go-qr/pkg/errorcorrection/reedsolomon", "--", "-test.run", "TestGenerateGeneratorPolynomial$"]

@@ -7,19 +7,23 @@ import (
 	"github.com/samlitowitz/go-qr/pkg/errorcorrection/reedsolomon"
 )
 
-func TestGeneratorPolynomial(t *testing.T) {
+func TestGenerateGeneratorPolynomial(t *testing.T) {
 	testCases := map[string]struct {
 		n        int
 		expected []byte
 	}{
+		"7 Error Correction Codewords": {
+			n:        7,
+			expected: []byte{21, 102, 238, 149, 146, 229, 87, 0},
+		},
 		"68 Error Correction Codewords": {
 			n:        68,
-			expected: []byte{0, 68, 247, 67, 159, 66, 223, 65, 33, 64, 224, 63, 93, 62, 77, 61, 70, 60, 90, 59, 160, 58, 32, 57, 254, 56, 43, 55, 150, 54, 84, 53, 101, 52, 190, 51, 205, 50, 133, 49, 52, 48, 60, 47, 202, 46, 165, 45, 220, 44, 203, 43, 151, 42, 93, 41, 84, 40, 15, 39, 84, 38, 253, 37, 173, 36, 160, 35, 89, 34, 227, 33, 52, 32, 199, 31, 97, 30, 95, 29, 231, 28, 52, 27, 177, 26, 41, 25, 125, 24, 137, 23, 241, 22, 166, 21, 225, 20, 118, 19, 2, 18, 54, 17, 32, 16, 82, 15, 215, 14, 175, 13, 198, 12, 43, 11, 238, 10, 235, 9, 27, 8, 101, 7, 184, 6, 127, 5, 3, 4, 5, 3, 8, 2, 163, 238},
+			expected: []byte{238, 163, 8, 5, 3, 127, 184, 101, 27, 235, 238, 43, 198, 175, 215, 82, 32, 54, 2, 118, 225, 166, 241, 137, 125, 41, 177, 52, 231, 95, 97, 199, 52, 227, 89, 160, 173, 253, 84, 15, 84, 93, 151, 203, 220, 165, 202, 60, 52, 133, 205, 190, 101, 84, 150, 43, 254, 32, 160, 90, 70, 77, 93, 224, 33, 223, 159, 247, 0},
 		},
 	}
 
 	for testDesc, testCase := range testCases {
-		actual := reedsolomon.GeneratorPolynomial(testCase.n)
+		actual := reedsolomon.GenerateGeneratorPolynomial(testCase.n)
 		if !cmp.Equal(testCase.expected, actual) {
 			t.Fatalf(
 				"%s: Invalid generator polynomial:\n%s",
