@@ -30,7 +30,6 @@ func (g *Generator) Generate(dataCodewords []byte) (errorCodewords []byte, err e
 	}
 
 	var remainderTerms []byte
-	//var mTermInt, inputTermInt, gTermAlpha, gMultAlpha, gMultInt byte
 	var mTermInt, inputTermInt, gMultInt byte
 	errorCodewords = make([]byte, 0, errorCodewordsCount)
 	remainderTermCount := g.cfg.ErrorCorrectionCodewordCount
