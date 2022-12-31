@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/samlitowitz/go-qr/pkg"
+	"github.com/samlitowitz/go-qr/pkg/bits"
 
-	"github.com/samlitowitz/go-qr/pkg/mode"
+	"github.com/samlitowitz/go-qr/pkg/bits/mode"
 )
 
 const bitsPerGroup = 10
@@ -56,7 +56,7 @@ func (enc *Encoder) Encode(v []byte) (int, error) {
 
 	buf := make([]byte, bufLen)
 	var byteInBuf int
-	unusedBitsInByte := pkg.BitsPerByte
+	unusedBitsInByte := bits.BitsPerByte
 	var numberOfBitsToPack, numberOfBitsUnpacked int
 	var err error
 
@@ -72,7 +72,7 @@ func (enc *Encoder) Encode(v []byte) (int, error) {
 		}
 	}
 	for numberOfBitsUnpacked = numberOfBitsToPack; numberOfBitsUnpacked > 0; {
-		numberOfBitsUnpacked, unusedBitsInByte, byteInBuf, err = pkg.PackInt(
+		numberOfBitsUnpacked, unusedBitsInByte, byteInBuf, err = bits.PackInt(
 			int(enc.cfg.ModeIndicator),
 			numberOfBitsToPack,
 			unusedBitsInByte,
@@ -99,7 +99,7 @@ func (enc *Encoder) Encode(v []byte) (int, error) {
 		}
 	}
 	for numberOfBitsUnpacked = numberOfBitsToPack; numberOfBitsUnpacked > 0; {
-		numberOfBitsUnpacked, unusedBitsInByte, byteInBuf, err = pkg.PackInt(
+		numberOfBitsUnpacked, unusedBitsInByte, byteInBuf, err = bits.PackInt(
 			charCount,
 			numberOfBitsToPack,
 			unusedBitsInByte,
@@ -139,7 +139,7 @@ func (enc *Encoder) Encode(v []byte) (int, error) {
 			}
 		}
 		for numberOfBitsUnpacked = numberOfBitsToPack; numberOfBitsUnpacked > 0; {
-			numberOfBitsUnpacked, unusedBitsInByte, byteInBuf, err = pkg.PackInt(
+			numberOfBitsUnpacked, unusedBitsInByte, byteInBuf, err = bits.PackInt(
 				groupVal,
 				numberOfBitsToPack,
 				unusedBitsInByte,
@@ -157,7 +157,7 @@ func (enc *Encoder) Encode(v []byte) (int, error) {
 
 	if unusedBitsInByte > 0 {
 		byteInBuf++
-		unusedBitsInByte = pkg.BitsPerByte
+		unusedBitsInByte = bits.BitsPerByte
 	}
 
 	if byteInBuf > 0 {

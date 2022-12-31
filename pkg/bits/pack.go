@@ -1,4 +1,4 @@
-package pkg
+package bits
 
 const BitsPerByte = 8
 

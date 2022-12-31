@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/samlitowitz/go-qr/pkg/errorcorrection/reedsolomon"
+	"github.com/samlitowitz/go-qr/pkg/codewords/errorcorrection/reedsolomon"
 )
 
 func TestGenerator_Generate(t *testing.T) {

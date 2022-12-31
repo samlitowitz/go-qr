@@ -3,8 +3,6 @@ package bits
 import (
 	"errors"
 	"io"
-
-	"github.com/samlitowitz/go-qr/pkg"
 )
 
 // From Go standard library definition of [bytes.Buffer](https://cs.opensource.google/go/go/+/refs/tags/go1.19.4:src/bytes/buffer.go).
@@ -53,7 +51,7 @@ func (b *Buffer) empty() bool {
 }
 
 // Len returns the number of bits of the unread portion of the buffer.
-func (b *Buffer) Len() int { return pkg.BitsPerByte*(len(b.buf)-b.readOffByte) + b.writeOffBit }
+func (b *Buffer) Len() int { return BitsPerByte*(len(b.buf)-b.readOffByte) + b.writeOffBit }
 
 // Reset resets the buffer to be empty,
 // but it retains the underlying storage for use by future writes.
@@ -74,9 +72,9 @@ func (b *Buffer) Write(p []byte, n int) (m int, err error) {
 		offByte = b.grow(n)
 	}
 	// Bit offset is zero, just copy it over
-	if b.writeOffBit == 0 && n%pkg.BitsPerByte == 0 {
-		b.writeOffBit = n % pkg.BitsPerByte
-		m = pkg.BitsPerByte * copy(b.buf[offByte:], p)
+	if b.writeOffBit == 0 && n%BitsPerByte == 0 {
+		b.writeOffBit = n % BitsPerByte
+		m = BitsPerByte * copy(b.buf[offByte:], p)
 
 		if m > n {
 			m = n
@@ -89,15 +87,15 @@ func (b *Buffer) Write(p []byte, n int) (m int, err error) {
 	var readMask, writeByte byte
 
 	for m = 0; m < n; {
-		inputOffByte = m / pkg.BitsPerByte
-		inputOffBit = m % pkg.BitsPerByte
+		inputOffByte = m / BitsPerByte
+		inputOffBit = m % BitsPerByte
 
 		// how many bits left in current buf byte
-		unwrittenBitsBufByte = pkg.BitsPerByte - b.writeOffBit
+		unwrittenBitsBufByte = BitsPerByte - b.writeOffBit
 		// how many bits left in current input byte
 		unreadBitsInInputByte = n - m
-		if pkg.BitsPerByte-inputOffBit < unreadBitsInInputByte {
-			unreadBitsInInputByte = pkg.BitsPerByte - inputOffBit
+		if BitsPerByte-inputOffBit < unreadBitsInInputByte {
+			unreadBitsInInputByte = BitsPerByte - inputOffBit
 		}
 
 		bytesToWrite = unwrittenBitsBufByte
@@ -144,8 +142,8 @@ func (b *Buffer) Read(p []byte, n int) (m int, err error) {
 		}
 		return 0, io.EOF
 	}
-	bytes := n / pkg.BitsPerByte
-	if n%pkg.BitsPerByte > 0 {
+	bytes := n / BitsPerByte
+	if n%BitsPerByte > 0 {
 		bytes++
 	}
 	if bytes > len(p) {
@@ -154,7 +152,7 @@ func (b *Buffer) Read(p []byte, n int) (m int, err error) {
 	if b.readOffBit == 0 {
 		m = copy(p, b.buf[b.readOffByte:bytes])
 		b.readOffByte += m
-		m *= pkg.BitsPerByte
+		m *= BitsPerByte
 		if m > n {
 			m = n
 		}
@@ -167,9 +165,9 @@ func (b *Buffer) Read(p []byte, n int) (m int, err error) {
 
 	for m = 0; m < n; {
 		// how many bits left in current buf byte
-		unreadBitsBufByte = pkg.BitsPerByte - b.readOffBit
+		unreadBitsBufByte = BitsPerByte - b.readOffBit
 		// how many bits left in current output byte
-		unwrittenBitsInOutputByte = m % pkg.BitsPerByte
+		unwrittenBitsInOutputByte = m % BitsPerByte
 
 		readMask = (1 << unreadBitsBufByte) - 1
 		writeMask = (1 << unwrittenBitsInOutputByte) - 1
@@ -205,7 +203,7 @@ func (b *Buffer) Read(p []byte, n int) (m int, err error) {
 // internal buffer only needs to be re-sliced.
 // It returns the index where bytes should be written and whether it succeeded.
 func (b *Buffer) tryGrowByReslice(n int) (int, bool) {
-	bytes := n/pkg.BitsPerByte + 1
+	bytes := n/BitsPerByte + 1
 	if l := len(b.buf); bytes <= cap(b.buf)-l {
 		b.buf = b.buf[:l+bytes]
 		return l, true
@@ -217,7 +215,7 @@ func (b *Buffer) tryGrowByReslice(n int) (int, bool) {
 // It returns the index where bytes should be written.
 // If the buffer can't grow it will panic with ErrTooLarge.
 func (b *Buffer) grow(n int) int {
-	bytes := n/pkg.BitsPerByte + 1
+	bytes := n/BitsPerByte + 1
 	m := b.Len()
 	// If buffer is empty, reset to recover space.
 	if m == 0 && b.readOffByte != 0 {

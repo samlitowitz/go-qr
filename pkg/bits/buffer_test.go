@@ -4,8 +4,6 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/samlitowitz/go-qr/pkg"
-
 	"github.com/samlitowitz/go-qr/pkg/bits"
 )
 
@@ -55,8 +53,8 @@ func TestBuffer_Write(t *testing.T) {
 				m,
 			)
 		}
-		l := testCase.n / pkg.BitsPerByte
-		if testCase.n%pkg.BitsPerByte > 0 {
+		l := testCase.n / bits.BitsPerByte
+		if testCase.n%bits.BitsPerByte > 0 {
 			l++
 		}
 		actual := make([]byte, l)
