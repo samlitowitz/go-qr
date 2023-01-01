@@ -142,15 +142,12 @@ func (b *Buffer) Read(p []byte, n int) (m int, err error) {
 		}
 		return 0, io.EOF
 	}
-	bytes := n / BitsPerByte
-	if n%BitsPerByte > 0 {
-		bytes++
-	}
-	if bytes > len(p) {
-		bytes = len(p)
+	nBytes := noLossBitsToBytes(n)
+	if nBytes > len(p) {
+		nBytes = len(p)
 	}
 	if b.readOffBit == 0 {
-		m = copy(p, b.buf[b.readOffByte:bytes])
+		m = copy(p, b.buf[b.readOffByte:nBytes])
 		b.readOffByte += m
 		m *= BitsPerByte
 		if m > n {
@@ -203,9 +200,9 @@ func (b *Buffer) Read(p []byte, n int) (m int, err error) {
 // internal buffer only needs to be re-sliced.
 // It returns the index where bytes should be written and whether it succeeded.
 func (b *Buffer) tryGrowByReslice(n int) (int, bool) {
-	bytes := n/BitsPerByte + 1
-	if l := len(b.buf); bytes <= cap(b.buf)-l {
-		b.buf = b.buf[:l+bytes]
+	nBytes := noLossBitsToBytes(n)
+	if l := len(b.buf); nBytes <= cap(b.buf)-l {
+		b.buf = b.buf[:l+nBytes]
 		return l, true
 	}
 	return 0, false
@@ -215,8 +212,9 @@ func (b *Buffer) tryGrowByReslice(n int) (int, bool) {
 // It returns the index where bytes should be written.
 // If the buffer can't grow it will panic with ErrTooLarge.
 func (b *Buffer) grow(n int) int {
-	bytes := n/BitsPerByte + 1
+	nBytes := noLossBitsToBytes(n)
 	m := b.Len()
+	mBytes := noLossBitsToBytes(m)
 	// If buffer is empty, reset to recover space.
 	if m == 0 && b.readOffByte != 0 {
 		b.Reset()
@@ -225,8 +223,8 @@ func (b *Buffer) grow(n int) int {
 	if i, ok := b.tryGrowByReslice(n); ok {
 		return i
 	}
-	if b.buf == nil && bytes <= smallBufferSize {
-		b.buf = make([]byte, bytes, smallBufferSize)
+	if b.buf == nil && nBytes <= smallBufferSize {
+		b.buf = make([]byte, nBytes, smallBufferSize)
 		return 0
 	}
 	c := cap(b.buf)
@@ -240,12 +238,12 @@ func (b *Buffer) grow(n int) int {
 		panic(ErrTooLarge)
 	} else {
 		// Add b.off to account for b.buf[:b.off] being sliced off the front.
-		b.buf = growSlice(b.buf[b.readOffByte:], b.readOffByte+n)
+		b.buf = growSlice(b.buf[b.readOffByte:], b.readOffByte+nBytes)
 	}
 	// Restore b.off and len(b.buf).
 	b.readOffByte = 0
-	b.buf = b.buf[:m+n]
-	return m
+	b.buf = b.buf[:mBytes+nBytes]
+	return mBytes
 }
 
 // growSlice grows b by n, preserving the original content of b.
@@ -274,3 +272,22 @@ func growSlice(b []byte, n int) []byte {
 	copy(b2, b)
 	return b2[:len(b)]
 }
+
+func noLossBitsToBytes(n int) int {
+	m := n / BitsPerByte
+	if n%BitsPerByte > 0 {
+		m++
+	}
+	return m
+}
+
+// NewBuffer creates and initializes a new Buffer using buf as its
+// initial contents. The new Buffer takes ownership of buf, and the
+// caller should not use buf after this call. NewBuffer is intended to
+// prepare a Buffer to read existing data. It can also be used to set
+// the initial size of the internal buffer for writing. To do that,
+// buf should have the desired capacity but a length of zero.
+//
+// In most cases, new(Buffer) (or just declaring a Buffer variable) is
+// sufficient to initialize a Buffer.
+func NewBuffer(buf []byte) *Buffer { return &Buffer{buf: buf} }
