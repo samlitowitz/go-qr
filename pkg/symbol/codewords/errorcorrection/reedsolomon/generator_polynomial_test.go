@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/samlitowitz/go-qr/pkg/codewords/errorcorrection/reedsolomon"
+	"github.com/samlitowitz/go-qr/pkg/symbol/codewords/errorcorrection/reedsolomon"
 )
 
 func TestGenerateGeneratorPolynomial(t *testing.T) {

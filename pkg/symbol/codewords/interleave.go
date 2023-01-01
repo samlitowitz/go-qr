@@ -2,9 +2,10 @@ package codewords
 
 import (
 	"fmt"
+	"math"
 	"sort"
 
-	"github.com/samlitowitz/go-qr/pkg/codewords/errorcorrection/reedsolomon"
+	"github.com/samlitowitz/go-qr/pkg/symbol/codewords/errorcorrection/reedsolomon"
 )
 
 type block struct {
@@ -69,19 +70,30 @@ func Interleave(ecCfg *reedsolomon.Config, dataCodewords, ecCodewords []byte) ([
 		return nil, err
 	}
 
-	prevDCC := 0
+	prevDCC := math.MaxInt
 	prevDCCBlock := 0
 	blockCount := len(blocks)
 	totalDCC := len(dataCodewords)
 	msg := make([]byte, totalDCC+len(ecCodewords))
 
 	for curBlock, block := range blocks {
+		switch true {
+		case block.dcc < prevDCC:
+			prevDCC = block.dcc
+			fallthrough
+		case block.dcc == prevDCC:
+			prevDCCBlock = curBlock
+		}
+
+		// Data Codewords
 		for j := 0; j < prevDCC; j++ {
 			msg[j*blockCount+curBlock] = dataCodewords[block.dataStart+j]
 		}
 		for j := prevDCC; j < block.dcc; j++ {
-			msg[j*blockCount+curBlock-prevDCCBlock] = dataCodewords[block.dataStart+j]
+			msg[j*blockCount+curBlock-prevDCCBlock-1] = dataCodewords[block.dataStart+j]
 		}
+
+		// EC Codewords
 		for j := 0; j < block.eccc; j++ {
 			msg[totalDCC+j*blockCount+curBlock] = ecCodewords[block.ecStart+j]
 		}

@@ -5,8 +5,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/samlitowitz/go-qr/pkg/bits/mode"
-	"github.com/samlitowitz/go-qr/pkg/bits/mode/alphanumeric"
+	"github.com/samlitowitz/go-qr/pkg/symbol/mode"
+	"github.com/samlitowitz/go-qr/pkg/symbol/mode/alphanumeric"
 )
 
 func TestEncoder_Encode_TooLargeInput(t *testing.T) {

@@ -6,7 +6,7 @@ import (
 
 	"github.com/samlitowitz/go-qr/pkg/bits"
 
-	"github.com/samlitowitz/go-qr/pkg/bits/mode"
+	"github.com/samlitowitz/go-qr/pkg/symbol/mode"
 )
 
 const bufLen = 1024

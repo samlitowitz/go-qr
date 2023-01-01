@@ -28,9 +28,9 @@ RUN go install github.com/go-delve/delve/cmd/dlv@latest \
 
 EXPOSE 8000 40000
 
-CMD ["dlv", "--listen=:40000", "--headless=true", "--api-version=2", "--accept-multiclient", "test", "github.com/samlitowitz/go-qr/pkg/mode/numeric", "--", "-test.run", "^TestEncoder_Encode$"]
-CMD ["dlv", "--listen=:40000", "--headless=true", "--api-version=2", "--accept-multiclient", "test", "github.com/samlitowitz/go-qr/pkg/mode/alphanumeric", "--", "-test.run", "^TestEncoder_Encode$"]
+CMD ["dlv", "--listen=:40000", "--headless=true", "--api-version=2", "--accept-multiclient", "test", "github.com/samlitowitz/go-qr/pkg/symbol/mode/numeric", "--", "-test.run", "^TestEncoder_Encode$"]
+CMD ["dlv", "--listen=:40000", "--headless=true", "--api-version=2", "--accept-multiclient", "test", "github.com/samlitowitz/go-qr/pkg/symbol/mode/alphanumeric", "--", "-test.run", "^TestEncoder_Encode$"]
 CMD ["dlv", "--listen=:40000", "--headless=true", "--api-version=2", "--accept-multiclient", "test", "github.com/samlitowitz/go-qr/pkg/bits", "--", "-test.run", "TestBuffer_Write$"]
-CMD ["dlv", "--listen=:40000", "--headless=true", "--api-version=2", "--accept-multiclient", "test", "github.com/samlitowitz/go-qr/pkg/errorcorrection/reedsolomon", "--", "-test.run", "TestGenerator_Generate$"]
-CMD ["dlv", "--listen=:40000", "--headless=true", "--api-version=2", "--accept-multiclient", "test", "github.com/samlitowitz/go-qr/pkg/errorcorrection/reedsolomon", "--", "-test.run", "TestGenerateGeneratorPolynomial$"]
-CMD ["dlv", "--listen=:40000", "--headless=true", "--api-version=2", "--accept-multiclient", "test", "github.com/samlitowitz/go-qr/pkg/codewords", "--", "-test.run", "TestInterleave$"]
+CMD ["dlv", "--listen=:40000", "--headless=true", "--api-version=2", "--accept-multiclient", "test", "github.com/samlitowitz/go-qr/pkg/symbol/codewords/errorcorrection/reedsolomon", "--", "-test.run", "TestGenerator_Generate$"]
+CMD ["dlv", "--listen=:40000", "--headless=true", "--api-version=2", "--accept-multiclient", "test", "github.com/samlitowitz/go-qr/pkg/symbol/codewords/errorcorrection/reedsolomon", "--", "-test.run", "TestGenerateGeneratorPolynomial$"]
+CMD ["dlv", "--listen=:40000", "--headless=true", "--api-version=2", "--accept-multiclient", "test", "github.com/samlitowitz/go-qr/pkg/symbol/codewords", "--", "-test.run", "TestInterleave$"]
