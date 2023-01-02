@@ -211,16 +211,11 @@ func (b *Buffer) Read(p []byte, n int) (m int, err error) {
 // It returns the index where bytes should be written and whether it succeeded.
 func (b *Buffer) tryGrowByReslice(n int) (int, bool) {
 	nBytes := noLossBitsToBytes(n)
-	c := cap(b.buf)
-
-	canReslice := nBytes <= c-b.writeOffByte
-	// Can't re-slice
-	if !canReslice {
-		return 0, false
+	if l := len(b.buf); nBytes <= cap(b.buf)-l {
+		b.buf = b.buf[:l+nBytes]
+		return b.writeOffByte, true
 	}
-	// Re-slice
-	b.buf = b.buf[:b.writeOffByte+nBytes]
-	return b.writeOffByte, true
+	return 0, false
 }
 
 // grow grows the buffer to guarantee space for n more bits.
@@ -243,13 +238,13 @@ func (b *Buffer) grow(n int) int {
 		return 0
 	}
 	c := cap(b.buf)
-	if n <= c/2-m {
+	if nBytes <= c/2-mBytes {
 		// We can slide things down instead of allocating a new
 		// slice. We only need m+n <= c to slide, but
 		// we instead let capacity get twice as large so we
 		// don't spend all our time copying.
 		copy(b.buf, b.buf[b.readOffByte:])
-	} else if c > maxInt-c-n {
+	} else if c > maxInt-c-nBytes {
 		panic(ErrTooLarge)
 	} else {
 		// Add b.off to account for b.buf[:b.off] being sliced off the front.
@@ -258,7 +253,10 @@ func (b *Buffer) grow(n int) int {
 	// Restore b.off and len(b.buf).
 	b.readOffByte = 0
 	b.buf = b.buf[:mBytes+nBytes]
-	return mBytes
+	if m%8 == 0 {
+		return mBytes
+	}
+	return mBytes - 1
 }
 
 // growSlice grows b by n, preserving the original content of b.
