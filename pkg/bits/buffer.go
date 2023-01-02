@@ -20,10 +20,11 @@ const maxInt = int(^uint(0) >> 1)
 // The zero value for Buffer is an empty buffer ready to use.
 type Buffer struct {
 	buf         []byte // contents are the bytes buf[off : len(buf)]
-	readOffByte int    // read at &buf[off], write at &buf[len(buf)]
+	readOffByte int    // read at &buf[off]
 	readOffBit  int    // read at &buf[off] & (1 << readOffBit) - 1
 
-	writeOffBit int // write at &buf[len(buf)] | (((1<< readOffBit) - 1) & input[i])
+	writeOffByte int // write at &buf[writeOffByte]
+	writeOffBit  int // write at &buf[writeOffByte] | (((1<< readOffBit) - 1) & input[i])
 }
 
 // Bytes returns a slice of length len(b.buf) - b.readOffByte holding the unread portion of the buffer.
@@ -60,6 +61,7 @@ func (b *Buffer) Reset() {
 	b.buf = b.buf[:0]
 	b.readOffByte = 0
 	b.readOffBit = 0
+	b.writeOffByte = 0
 	b.writeOffBit = 0
 }
 
@@ -71,11 +73,12 @@ func (b *Buffer) Write(p []byte, n int) (m int, err error) {
 	if !ok {
 		offByte = b.grow(n)
 	}
+	b.writeOffByte = offByte
 	// Bit offset is zero, just copy it over
 	if b.writeOffBit == 0 && n%BitsPerByte == 0 {
 		b.writeOffBit = n % BitsPerByte
-		m = BitsPerByte * copy(b.buf[offByte:], p)
-
+		m = BitsPerByte * copy(b.buf[b.writeOffByte:], p)
+		b.writeOffByte += n / BitsPerByte
 		if m > n {
 			m = n
 		}
@@ -116,11 +119,11 @@ func (b *Buffer) Write(p []byte, n int) (m int, err error) {
 		writeByte >>= b.writeOffBit
 
 		// Write bits
-		b.buf[offByte] |= writeByte
+		b.buf[b.writeOffByte] |= writeByte
 
 		b.writeOffBit += bytesToWrite
 		if b.writeOffBit >= 8 {
-			offByte++
+			b.writeOffByte++
 			b.writeOffBit = b.writeOffBit % 8
 		}
 		m += bytesToWrite
@@ -207,15 +210,17 @@ func (b *Buffer) Read(p []byte, n int) (m int, err error) {
 // internal buffer only needs to be re-sliced.
 // It returns the index where bytes should be written and whether it succeeded.
 func (b *Buffer) tryGrowByReslice(n int) (int, bool) {
-	nBytes := noLossBitsToBytes(n - b.writeOffBit)
-	if l := len(b.buf); nBytes <= cap(b.buf)-l {
-		b.buf = b.buf[:l+nBytes]
-		if b.writeOffBit > 0 {
-			return l - 1, true
-		}
-		return l, true
+	nBytes := noLossBitsToBytes(n)
+	c := cap(b.buf)
+
+	canReslice := nBytes <= c-b.writeOffByte
+	// Can't re-slice
+	if !canReslice {
+		return 0, false
 	}
-	return 0, false
+	// Re-slice
+	b.buf = b.buf[:b.writeOffByte+nBytes]
+	return b.writeOffByte, true
 }
 
 // grow grows the buffer to guarantee space for n more bits.
