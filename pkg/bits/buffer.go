@@ -52,7 +52,7 @@ func (b *Buffer) empty() bool {
 }
 
 // Len returns the number of bits of the unread portion of the buffer.
-func (b *Buffer) Len() int { return BitsPerByte*(len(b.buf)-b.readOffByte) + b.writeOffBit }
+func (b *Buffer) Len() int { return BitsPerByte*(b.writeOffByte-b.readOffByte) + b.writeOffBit }
 
 // Reset resets the buffer to be empty,
 // but it retains the underlying storage for use by future writes.
