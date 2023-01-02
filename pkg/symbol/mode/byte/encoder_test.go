@@ -22,9 +22,9 @@ func TestEncoder_Encode(t *testing.T) {
 				ModeIndicator:        2,
 				CharacterCountLength: 4,
 			},
-			v:            []byte{0xff, 0x01, 0x02, 0x03, 0x04, 0x05},
-			expected:     []byte{0x98, 0x00, 0x04, 0x08, 0x0C, 0x10, 0x14},
-			bitsInStream: 54,
+			v:            []byte{0xd1},
+			expected:     []byte{0x87, 0x44},
+			bitsInStream: 14,
 		},
 		//"M4": {
 		//	cfg: &mode.Config{

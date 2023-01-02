@@ -60,5 +60,10 @@ func (enc *Encoder) Encode(v []byte) (int, error) {
 		}
 	}
 
+	_, err = enc.w.Write(buf.Bytes())
+	if err != nil {
+		return 0, err
+	}
+
 	return buf.Len(), nil
 }
