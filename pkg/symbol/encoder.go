@@ -12,17 +12,23 @@ type unencodedData struct {
 }
 
 type Encoder struct {
-	unencodedData []*unencodedData
+	unencodedData   []*unencodedData
+	charCountByMode map[mode.Mode]int
 }
 
 func NewEncoder() *Encoder {
 	return &Encoder{
-		unencodedData: []*unencodedData{},
+		unencodedData:   []*unencodedData{},
+		charCountByMode: make(map[mode.Mode]int),
 	}
 }
 
 func (enc *Encoder) Write(data []byte, encMode mode.Mode) (int, error) {
 	enc.unencodedData = append(enc.unencodedData, &unencodedData{encMode: encMode, data: data})
+	if _, ok := enc.charCountByMode[encMode]; !ok {
+		enc.charCountByMode[encMode] = 0
+	}
+	enc.charCountByMode[encMode] += len(data)
 
 	return len(data), nil
 }
