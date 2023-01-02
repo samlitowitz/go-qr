@@ -32,7 +32,9 @@ type Buffer struct {
 // only until the next call to a method like Read, Write, Reset, or Truncate).
 // The slice aliases the buffer content at least until the next buffer modification,
 // so immediate changes to the slice will affect the result of future reads.
-func (b *Buffer) Bytes() []byte { return b.buf[b.readOffByte:] }
+func (b *Buffer) Bytes() []byte {
+	return b.buf[b.readOffByte:noLossBitsToBytes(b.writeOffByte*BitsPerByte+b.writeOffBit)]
+}
 
 // String returns the contents of the unread portion of the buffer
 // as a string. If the Buffer is a nil pointer, it returns "<nil>".
