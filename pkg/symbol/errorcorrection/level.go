@@ -1,5 +1,5 @@
 //go:generate go run golang.org/x/tools/cmd/stringer -type=Level
-package symbol
+package errorcorrection
 
 type Level int
 

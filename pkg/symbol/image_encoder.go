@@ -1,6 +1,10 @@
 package symbol
 
-import "image"
+import (
+	"image"
+
+	"github.com/samlitowitz/go-qr/pkg/symbol/errorcorrection"
+)
 
 type ImageEncoder struct {
 	*Encoder
@@ -12,6 +16,6 @@ func NewImageEncoder() *ImageEncoder {
 	}
 }
 
-func (enc *ImageEncoder) Encode() (image.Image, error) {
+func (enc *ImageEncoder) Encode(ecLevel errorcorrection.Level) (image.Image, error) {
 	return nil, nil
 }

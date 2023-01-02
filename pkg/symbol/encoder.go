@@ -2,6 +2,7 @@ package symbol
 
 import (
 	"github.com/samlitowitz/go-qr/pkg/bits"
+	"github.com/samlitowitz/go-qr/pkg/symbol/errorcorrection"
 	"github.com/samlitowitz/go-qr/pkg/symbol/mode"
 )
 
@@ -26,6 +27,6 @@ func (enc *Encoder) Write(data []byte, encMode mode.Mode) (int, error) {
 	return len(data), nil
 }
 
-func (enc *Encoder) Encode() (*bits.Buffer, error) {
+func (enc *Encoder) Encode(ecLevel errorcorrection.Level) (*bits.Buffer, error) {
 	return nil, nil
 }
