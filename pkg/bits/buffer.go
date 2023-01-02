@@ -156,47 +156,48 @@ func (b *Buffer) Read(p []byte, n int) (m int, err error) {
 		return m, nil
 	}
 
-	var outputOffByte int
-	var unwrittenBitsBufByte, unreadBitsInInputByte, bytesToWrite int
+	var outputOffByte, outputOffBit int
+	var unreadBitsBufByte, unwrittenBitsInInputByte, bitsToWrite int
 	var readMask, writeByte byte
 
 	for m = 0; m < n; {
 		outputOffByte = m / BitsPerByte
+		outputOffBit = m % BitsPerByte
 
 		// how many bits left in current buf byte
-		unwrittenBitsBufByte = BitsPerByte - b.writeOffBit
+		unreadBitsBufByte = BitsPerByte - outputOffBit
 		// how many bits left in current input byte
-		unreadBitsInInputByte = n - m
-		if BitsPerByte-b.readOffBit < unreadBitsInInputByte {
-			unreadBitsInInputByte = BitsPerByte - b.readOffBit
+		unwrittenBitsInInputByte = n - m
+		if BitsPerByte-b.readOffBit < unwrittenBitsInInputByte {
+			unwrittenBitsInInputByte = BitsPerByte - b.readOffBit
 		}
 
-		bytesToWrite = unwrittenBitsBufByte
-		if unreadBitsInInputByte < bytesToWrite {
-			bytesToWrite = unreadBitsInInputByte
+		bitsToWrite = unreadBitsBufByte
+		if unwrittenBitsInInputByte < bitsToWrite {
+			bitsToWrite = unwrittenBitsInInputByte
 		}
 
 		// Build read mask
-		readMask = (1 << bytesToWrite) - 1
+		readMask = (1 << bitsToWrite) - 1
 		// Position read mask
-		readMask <<= 8 - bytesToWrite - b.readOffBit
+		readMask <<= 8 - bitsToWrite - b.readOffBit
 
 		// Apply read mask
 		writeByte = b.buf[b.readOffByte] & readMask
 		// Position at MSB
 		writeByte <<= b.readOffBit
 		// Position at write offset
-		writeByte >>= b.writeOffBit
+		writeByte >>= outputOffBit
 
 		// Write bits
 		p[outputOffByte] |= writeByte
 
-		b.readOffBit += bytesToWrite
+		b.readOffBit += bitsToWrite
 		if b.readOffBit >= 8 {
 			b.readOffByte++
 			b.readOffBit = b.readOffBit % 8
 		}
-		m += bytesToWrite
+		m += bitsToWrite
 	}
 
 	return m, nil
@@ -209,6 +210,9 @@ func (b *Buffer) tryGrowByReslice(n int) (int, bool) {
 	nBytes := noLossBitsToBytes(n - b.writeOffBit)
 	if l := len(b.buf); nBytes <= cap(b.buf)-l {
 		b.buf = b.buf[:l+nBytes]
+		if b.writeOffBit > 0 {
+			return l - 1, true
+		}
 		return l, true
 	}
 	return 0, false

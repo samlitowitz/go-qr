@@ -115,11 +115,11 @@ func TestBuffer_Write(t *testing.T) {
 			writes: []bufNBits{
 				{
 					n:    2,
-					data: []byte{0x02},
+					data: []byte{0x02 << 6},
 				},
 				{
 					n:    4,
-					data: []byte{0x06},
+					data: []byte{0x06 << 4},
 				},
 			},
 			reads: []bufNBits{

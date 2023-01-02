@@ -33,7 +33,7 @@ CMD ["dlv", "--listen=:40000", "--headless=true", "--api-version=2", "--accept-m
 CMD ["dlv", "--listen=:40000", "--headless=true", "--api-version=2", "--accept-multiclient", "test", "github.com/samlitowitz/go-qr/pkg/symbol/mode/byte", "--", "-test.run", "^TestEncoder_Encode$"]
 CMD ["dlv", "--listen=:40000", "--headless=true", "--api-version=2", "--accept-multiclient", "test", "github.com/samlitowitz/go-qr/pkg/bits", "--", "-test.run", "TestBuffer_Write$"]
 #CMD ["dlv", "--listen=:40000", "--headless=true", "--api-version=2", "--accept-multiclient", "test", "github.com/samlitowitz/go-qr/pkg/bits", "--", "-test.run", "TestBuffer_WriteWhichGrows$"]
-CMD ["dlv", "--listen=:40000", "--headless=true", "--api-version=2", "--accept-multiclient", "test", "github.com/samlitowitz/go-qr/pkg/bits", "--", "-test.run", "TestBuffer_WriteSequentially"]
+#CMD ["dlv", "--listen=:40000", "--headless=true", "--api-version=2", "--accept-multiclient", "test", "github.com/samlitowitz/go-qr/pkg/bits", "--", "-test.run", "TestBuffer_WriteSequentially"]
 #CMD ["dlv", "--listen=:40000", "--headless=true", "--api-version=2", "--accept-multiclient", "test", "github.com/samlitowitz/go-qr/pkg/symbol/codewords/errorcorrection/reedsolomon", "--", "-test.run", "TestGenerator_Generate$"]
 #CMD ["dlv", "--listen=:40000", "--headless=true", "--api-version=2", "--accept-multiclient", "test", "github.com/samlitowitz/go-qr/pkg/symbol/codewords/errorcorrection/reedsolomon", "--", "-test.run", "TestGenerateGeneratorPolynomial$"]
 #CMD ["dlv", "--listen=:40000", "--headless=true", "--api-version=2", "--accept-multiclient", "test", "github.com/samlitowitz/go-qr/pkg/symbol/codewords", "--", "-test.run", "TestInterleave$"]
