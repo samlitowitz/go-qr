@@ -36,26 +36,26 @@ func TestEncoder_Encode(t *testing.T) {
 			expected:     []byte{0x8B, 0x47, 0x04},
 			bitsInStream: 22,
 		},
-		//"M4": {
-		//	cfg: &mode.Config{
-		//		ModeIndicatorLength:  3,
-		//		ModeIndicator:        2,
-		//		CharacterCountLength: 5,
-		//	},
-		//	v:            []byte("0123456789012345"),
-		//	expected:     []byte{0x20, 0x06, 0x2b, 0x35, 0x37, 0x0a, 0x75, 0x28},
-		//	bitsInStream: 61,
-		//},
-		//"1": {
-		//	cfg: &mode.Config{
-		//		ModeIndicatorLength:  4,
-		//		ModeIndicator:        4,
-		//		CharacterCountLength: 8,
-		//	},
-		//	v:            []byte("01234567"),
-		//	expected:     []byte{0x10, 0x20, 0x0c, 0x56, 0x61, 0x80},
-		//	bitsInStream: 41,
-		//},
+		"M4": {
+			cfg: &mode.Config{
+				ModeIndicatorLength:  3,
+				ModeIndicator:        2,
+				CharacterCountLength: 5,
+			},
+			v:            []byte("0123456789012345"),
+			expected:     append([]byte{0x50}, []byte("0123456789012345")...),
+			bitsInStream: 136,
+		},
+		"1": {
+			cfg: &mode.Config{
+				ModeIndicatorLength:  4,
+				ModeIndicator:        4,
+				CharacterCountLength: 8,
+			},
+			v:            []byte("01234"),
+			expected:     []byte{0x40, 0x53, 0x03, 0x13, 0x23, 0x33, 0x40},
+			bitsInStream: 52,
+		},
 	}
 
 	for testDesc, testCase := range testCases {
