@@ -146,7 +146,7 @@ func (b *Buffer) Read(p []byte, n int) (m int, err error) {
 	if nBytes > len(p) {
 		nBytes = len(p)
 	}
-	if b.readOffBit == 0 {
+	if b.readOffBit == 0 && n%BitsPerByte == 0 {
 		m = copy(p, b.buf[b.readOffByte:nBytes])
 		b.readOffByte += m
 		m *= BitsPerByte
@@ -157,42 +157,48 @@ func (b *Buffer) Read(p []byte, n int) (m int, err error) {
 	}
 
 	var outputOffByte int
-	var unreadBitsBufByte, unwrittenBitsInOutputByte int
-	var readMask, writeMask byte
+	var unwrittenBitsBufByte, unreadBitsInInputByte, bytesToWrite int
+	var readMask, writeByte byte
 
 	for m = 0; m < n; {
+		outputOffByte = m / BitsPerByte
+
 		// how many bits left in current buf byte
-		unreadBitsBufByte = BitsPerByte - b.readOffBit
-		// how many bits left in current output byte
-		unwrittenBitsInOutputByte = m % BitsPerByte
-
-		readMask = (1 << unreadBitsBufByte) - 1
-		writeMask = (1 << unwrittenBitsInOutputByte) - 1
-
-		switch true {
-		case unreadBitsBufByte == unwrittenBitsInOutputByte:
-			p[outputOffByte] |= writeMask & (readMask & b.buf[b.readOffByte])
-
-			m += unreadBitsBufByte
-			outputOffByte++
-			b.readOffByte++
-			b.readOffBit = 0
-
-		case unreadBitsBufByte < unwrittenBitsInOutputByte:
-			p[outputOffByte] |= writeMask & ((readMask & b.buf[b.readOffByte]) << (unreadBitsBufByte - unwrittenBitsInOutputByte))
-
-			m += unreadBitsBufByte
-			outputOffByte++
-			b.readOffBit += unreadBitsBufByte
-
-		case unreadBitsBufByte > unwrittenBitsInOutputByte:
-			p[outputOffByte] |= writeMask & ((readMask & b.buf[b.readOffByte]) >> (unwrittenBitsInOutputByte - unreadBitsBufByte))
-
-			m += unreadBitsBufByte - unwrittenBitsInOutputByte
-			b.readOffByte++
-			b.readOffBit = 0
+		unwrittenBitsBufByte = BitsPerByte - b.writeOffBit
+		// how many bits left in current input byte
+		unreadBitsInInputByte = n - m
+		if BitsPerByte-b.readOffBit < unreadBitsInInputByte {
+			unreadBitsInInputByte = BitsPerByte - b.readOffBit
 		}
+
+		bytesToWrite = unwrittenBitsBufByte
+		if unreadBitsInInputByte < bytesToWrite {
+			bytesToWrite = unreadBitsInInputByte
+		}
+
+		// Build read mask
+		readMask = (1 << bytesToWrite) - 1
+		// Position read mask
+		readMask <<= 8 - bytesToWrite - b.readOffBit
+
+		// Apply read mask
+		writeByte = b.buf[b.readOffByte] & readMask
+		// Position at MSB
+		writeByte <<= b.readOffBit
+		// Position at write offset
+		writeByte >>= b.writeOffBit
+
+		// Write bits
+		p[outputOffByte] |= writeByte
+
+		b.readOffBit += bytesToWrite
+		if b.readOffBit >= 8 {
+			b.readOffByte++
+			b.readOffBit = b.readOffBit % 8
+		}
+		m += bytesToWrite
 	}
+
 	return m, nil
 }
 
@@ -200,7 +206,7 @@ func (b *Buffer) Read(p []byte, n int) (m int, err error) {
 // internal buffer only needs to be re-sliced.
 // It returns the index where bytes should be written and whether it succeeded.
 func (b *Buffer) tryGrowByReslice(n int) (int, bool) {
-	nBytes := noLossBitsToBytes(n)
+	nBytes := noLossBitsToBytes(n - b.writeOffBit)
 	if l := len(b.buf); nBytes <= cap(b.buf)-l {
 		b.buf = b.buf[:l+nBytes]
 		return l, true

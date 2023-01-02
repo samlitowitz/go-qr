@@ -7,149 +7,185 @@ import (
 	"github.com/samlitowitz/go-qr/pkg/bits"
 )
 
+type bufNBits struct {
+	n    int
+	data []byte
+}
+
+type testCase struct {
+	init   []byte
+	writes []bufNBits
+	reads  []bufNBits
+}
+
 func TestBuffer_Write(t *testing.T) {
-	testCases := map[string]struct {
-		input    []byte
-		n        int
-		expected []byte
-	}{
+	testCases := map[string]testCase{
 		"write n bits where n = 8": {
-			input:    []byte{0x01},
-			n:        8,
-			expected: []byte{0x01},
+			init: []byte{},
+			writes: []bufNBits{
+				{
+					n:    8,
+					data: []byte{0x01},
+				},
+			},
+			reads: []bufNBits{
+				{
+					n:    8,
+					data: []byte{0x01},
+				},
+			},
 		},
 		"write n bits where n % 8 = 0, n > 8": {
-			input:    []byte{0x01, 0x02},
-			n:        16,
-			expected: []byte{0x01, 0x02},
+			init: []byte{},
+			writes: []bufNBits{
+				{
+					n:    16,
+					data: []byte{0x01, 0x02},
+				},
+			},
+			reads: []bufNBits{
+				{
+					n:    16,
+					data: []byte{0x01, 0x02},
+				},
+			},
 		},
 		"write n bits where n < 8": {
-			input:    []byte{0xf5},
-			n:        6,
-			expected: []byte{0xf4},
+			init: []byte{},
+			writes: []bufNBits{
+				{
+					n:    8,
+					data: []byte{0xf5},
+				},
+			},
+			reads: []bufNBits{
+				{
+					n:    6,
+					data: []byte{0xf4},
+				},
+			},
 		},
 		"write n bits where n % 8 != 0, n > 8": {
-			input:    []byte{0x01, 0xd0},
-			n:        10,
-			expected: []byte{0x01, 0xc0},
+			init: []byte{},
+			writes: []bufNBits{
+				{
+					n:    16,
+					data: []byte{0x01, 0xd0},
+				},
+			},
+			reads: []bufNBits{
+				{
+					n:    10,
+					data: []byte{0x01, 0xc0},
+				},
+			},
+		},
+		"write 8 bits with empty init": {
+			init: []byte{},
+			writes: []bufNBits{
+				{
+					n:    8,
+					data: []byte{0x01},
+				},
+			},
+			reads: []bufNBits{
+				{
+					n:    8,
+					data: []byte{0x01},
+				},
+			},
+		},
+		"write 16 bits with 2 byte init": {
+			init: make([]byte, 0, 2),
+			writes: []bufNBits{
+				{
+					n:    32,
+					data: []byte{0x01, 0x02, 0x03, 0x04},
+				},
+			},
+			reads: []bufNBits{
+				{
+					n:    16,
+					data: []byte{0x01, 0x02},
+				},
+			},
+		},
+		"write 2 in 2 bits and 6 in 4 bits": {
+			init: []byte{},
+			writes: []bufNBits{
+				{
+					n:    2,
+					data: []byte{0x02},
+				},
+				{
+					n:    4,
+					data: []byte{0x06},
+				},
+			},
+			reads: []bufNBits{
+				{
+					n:    6,
+					data: []byte{0x98},
+				},
+			},
 		},
 	}
 
-	for testDesc, testCase := range testCases {
-		buf := &bits.Buffer{}
-		m, err := buf.Write(testCase.input, testCase.n)
-		if err != nil {
-			t.Fatalf(
-				"%s: Write failed: %s",
-				testDesc,
-				err,
-			)
+	for desc, tc := range testCases {
+		buf := bits.NewBuffer(tc.init)
+
+		for _, write := range tc.writes {
+			m, err := buf.Write(write.data, write.n)
+			if err != nil {
+				t.Fatalf(
+					"%s: Write failed: %s",
+					desc,
+					err,
+				)
+			}
+			if !cmp.Equal(m, write.n) {
+				t.Fatalf(
+					"%s:\n%s",
+					desc,
+					cmp.Diff(m, write.n),
+				)
+			}
 		}
-		if m != testCase.n {
-			t.Fatalf(
-				"%s: Write failed: expected %d bits written, got %d",
-				testDesc,
-				testCase.n,
-				m,
-			)
+
+		for _, read := range tc.reads {
+			l := noLossBitsToBytes(read.n)
+			actual := make([]byte, l)
+			m, err := buf.Read(actual, read.n)
+			if err != nil {
+				t.Fatalf(
+					"%s: Read failed: %s",
+					desc,
+					err,
+				)
+			}
+			if !cmp.Equal(m, read.n) {
+				t.Fatalf(
+					"%s:\n%s",
+					desc,
+					cmp.Diff(m, read.n),
+				)
+			}
+			if !cmp.Equal(read.data, actual) {
+				t.Fatalf(
+					"%s: Read failed:\n%s",
+					desc,
+					cmp.Diff(read.data, actual),
+				)
+			}
 		}
-		l := testCase.n / bits.BitsPerByte
-		if testCase.n%bits.BitsPerByte > 0 {
-			l++
-		}
-		actual := make([]byte, l)
-		m, err = buf.Read(actual, testCase.n)
-		if err != nil {
-			t.Fatalf(
-				"%s: Read failed: %s",
-				testDesc,
-				err,
-			)
-		}
-		if m != testCase.n {
-			t.Fatalf(
-				"%s: Read failed: expected %d bits read, got %d",
-				testDesc,
-				testCase.n,
-				m,
-			)
-		}
-		if !cmp.Equal(testCase.expected, actual) {
-			t.Fatalf(
-				"%s: Read failed:\n%s",
-				testDesc,
-				cmp.Diff(testCase.input, actual),
-			)
-		}
+
 	}
 }
 
-func TestBuffer_WriteWhichGrows(t *testing.T) {
-	testCases := map[string]struct {
-		init     []byte
-		input    []byte
-		n        int
-		expected []byte
-	}{
-		"write 8 bits with empty init": {
-			init:     []byte{},
-			input:    []byte{0x01},
-			n:        8,
-			expected: []byte{0x01},
-		},
-		"write 16 bits with 2 byte init": {
-			init:     make([]byte, 0, 2),
-			input:    []byte{0x01, 0x02, 0x03, 0x04},
-			n:        16,
-			expected: []byte{0x01, 0x02},
-		},
+func noLossBitsToBytes(n int) int {
+	m := n / bits.BitsPerByte
+	if n%bits.BitsPerByte > 0 {
+		m++
 	}
-
-	for testDesc, testCase := range testCases {
-		buf := bits.NewBuffer(testCase.init)
-		m, err := buf.Write(testCase.input, testCase.n)
-		if err != nil {
-			t.Fatalf(
-				"%s: Write failed: %s",
-				testDesc,
-				err,
-			)
-		}
-		if m != testCase.n {
-			t.Fatalf(
-				"%s: Write failed: expected %d bits written, got %d",
-				testDesc,
-				testCase.n,
-				m,
-			)
-		}
-		l := testCase.n / bits.BitsPerByte
-		if testCase.n%bits.BitsPerByte > 0 {
-			l++
-		}
-		actual := make([]byte, l)
-		m, err = buf.Read(actual, testCase.n)
-		if err != nil {
-			t.Fatalf(
-				"%s: Read failed: %s",
-				testDesc,
-				err,
-			)
-		}
-		if m != testCase.n {
-			t.Fatalf(
-				"%s: Read failed: expected %d bits read, got %d",
-				testDesc,
-				testCase.n,
-				m,
-			)
-		}
-		if !cmp.Equal(testCase.expected, actual) {
-			t.Fatalf(
-				"%s: Read failed:\n%s",
-				testDesc,
-				cmp.Diff(testCase.input, actual),
-			)
-		}
-	}
+	return m
 }
