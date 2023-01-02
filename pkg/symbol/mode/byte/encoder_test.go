@@ -16,7 +16,7 @@ func TestEncoder_Encode(t *testing.T) {
 		expected     []byte
 		bitsInStream int
 	}{
-		"M3": {
+		"M3 - 1": {
 			cfg: &mode.Config{
 				ModeIndicatorLength:  2,
 				ModeIndicator:        2,
@@ -25,6 +25,16 @@ func TestEncoder_Encode(t *testing.T) {
 			v:            []byte{0xd1},
 			expected:     []byte{0x87, 0x44},
 			bitsInStream: 14,
+		},
+		"M3 - 2": {
+			cfg: &mode.Config{
+				ModeIndicatorLength:  2,
+				ModeIndicator:        2,
+				CharacterCountLength: 4,
+			},
+			v:            []byte{0xd1, 0xc1},
+			expected:     []byte{0x8B, 0x47, 0x04},
+			bitsInStream: 22,
 		},
 		//"M4": {
 		//	cfg: &mode.Config{
